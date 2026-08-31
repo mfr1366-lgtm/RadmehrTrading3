@@ -1,0 +1,39 @@
+<!doctype html><html lang="fa" dir="rtl"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RadmehrTrading</title>
+<style>
+body{margin:0;background:#071014;color:#eee;font-family:Tahoma,Arial,sans-serif}
+main{max-width:1100px;margin:auto;padding:16px}.top,.card{background:#0d191e;border:1px solid #20343b;border-radius:16px;padding:16px;margin-bottom:14px}
+h1{margin:0;color:#f39a20}h1 span{color:#58c83e}.muted{color:#91a5aa;font-size:13px}
+.controls{display:flex;gap:8px;flex-wrap:wrap}select,button{background:#101e23;color:#fff;border:1px solid #294048;border-radius:9px;padding:10px}button{background:#087e40}
+.price{font-size:30px;color:#20d66b;font-weight:bold;margin:15px 0}canvas{width:100%;height:360px;background:#071014;border-radius:10px}
+.signal{padding:15px;border-radius:12px;background:#09251a;border:1px solid #155a36;margin-top:12px}.sell{background:#291015;border-color:#71313b}
+.big{font-size:25px;font-weight:bold;color:#20d66b}.sell .big{color:#ff4d5e}
+.rows{display:grid;grid-template-columns:repeat(2,1fr);gap:7px;margin-top:10px}.row{background:#0a1519;padding:9px;display:flex;justify-content:space-between}
+@media(max-width:700px){.rows{grid-template-columns:1fr}canvas{height:280px}}
+</style></head><body><main>
+<div class="top"><h1>Radmehr<span>Trading</span></h1><div class="muted">تحلیل هوشمند بازار • نسخه وب مستقل</div></div>
+<div class="card"><div class="controls">
+<select id="s"><option>BTCUSDT</option><option>ETHUSDT</option><option>BNBUSDT</option><option>SOLUSDT</option><option>XRPUSDT</option><option>ADAUSDT</option></select>
+<select id="tf"><option>1m</option><option>5m</option><option>15m</option><option selected>1h</option><option>4h</option><option>1d</option></select>
+<button onclick="load()">تحلیل مجدد</button></div></div>
+<div class="card"><div id="name">BTC/USDT</div><div class="price" id="price">—</div>
+<canvas id="c" width="1000" height="360"></canvas>
+<div class="signal" id="sig"><div class="big" id="txt">در حال تحلیل...</div><div id="why" class="muted">EMA + RSI + Momentum</div>
+<div class="rows"><div class="row">ورود <b id="en">—</b></div><div class="row">حد ضرر <b id="sl">—</b></div><div class="row">TP1 <b id="t1">—</b></div><div class="row">TP2 <b id="t2">—</b></div><div class="row">TP3 <b id="t3">—</b></div><div class="row">امتیاز تحلیل <b id="sc">—</b></div></div></div></div>
+<div class="card"><h3>اخبار و هشدار</h3><div class="muted">داده زنده قیمت کریپتو از Binance عمومی دریافت می‌شود. برای اخبار جهانی واقعی و Forex/XAUUSD باید API داده/خبر اضافه شود.</div><p id="alert">هشدار مهمی ثبت نشده است.</p></div>
+<div class="muted" style="text-align:center">ساخته شده توسط م.فلاح.ر • خروجی تحلیلی است و تضمین سود یا موفقیت ندارد.</div>
+</main>
+<script>
+const $=x=>document.getElementById(x),cv=$('c'),x=cv.getContext('2d');let a=[],last='';
+function ema(a,n){if(a.length<n)return 0;let e=a.slice(0,n).reduce((p,q)=>p+q,0)/n,k=2/(n+1);for(let i=n;i<a.length;i++)e=a[i]*k+e*(1-k);return e}
+function rsi(a,n=14){if(a.length<=n)return 50;let g=0,l=0;for(let i=1;i<=n;i++){let d=a[i]-a[i-1];g+=Math.max(d,0);l+=Math.max(-d,0)}g/=n;l/=n;for(let i=n+1;i<a.length;i++){let d=a[i]-a[i-1];g=(g*(n-1)+Math.max(d,0))/n;l=(l*(n-1)+Math.max(-d,0))/n}return l?100-100/(1+g/l):100}
+function draw(){x.clearRect(0,0,cv.width,cv.height);let z=a.slice(-90),lo=Math.min(...z.map(q=>q.l)),hi=Math.max(...z.map(q=>q.h)),w=cv.width/z.length;
+z.forEach((q,i)=>{let X=(i+.5)*w,Y=p=>cv.height-20-(p-lo)/(hi-lo||1)*(cv.height-40);x.strokeStyle=q.c>=q.o?'#20d66b':'#ff4d5e';x.beginPath();x.moveTo(X,Y(q.h));x.lineTo(X,Y(q.l));x.stroke();x.fillStyle=x.strokeStyle;x.fillRect(X-w*.3,Math.min(Y(q.o),Y(q.c)),w*.6,Math.max(2,Math.abs(Y(q.o)-Y(q.c))))})}
+function analyze(){let z=a.map(q=>q.c),p=z.at(-1),e9=ema(z,9),e21=ema(z,21),r=rsi(z),bull=e9>e21&&p>e9&&r>52,bear=e9<e21&&p<e9&&r<48,t=bull?'BUY':bear?'SELL':'WAIT';
+let atr=a.slice(-14).reduce((s,q)=>s+q.h-q.l,0)/14,sl=bull?p-1.5*atr:bear?p+1.5*atr:p,t1=bull?p+atr:bear?p-atr:p,t2=bull?p+2*atr:bear?p-2*atr:p,t3=bull?p+3*atr:bear?p-3*atr:p;
+let score=Math.max(35,Math.min(95,Math.round(50+Math.abs((e9-e21)/p)*9000)));
+$('sig').className='signal '+(t==='SELL'?'sell':'');$('txt').textContent=t==='BUY'?'🟢 خرید':t==='SELL'?'🔴 فروش':'🟡 انتظار';$('why').textContent=`EMA9 ${e9.toFixed(2)} • EMA21 ${e21.toFixed(2)} • RSI ${r.toFixed(1)}`;$('en').textContent=p.toFixed(4);$('sl').textContent=sl.toFixed(4);$('t1').textContent=t1.toFixed(4);$('t2').textContent=t2.toFixed(4);$('t3').textContent=t3.toFixed(4);$('sc').textContent=score+'/100';if(last&&last!==t)$('alert').textContent='سیگنال از '+last+' به '+t+' تغییر کرد.';last=t}
+async function load(){let s=$('s').value,tf=$('tf').value;$('name').textContent=s.slice(0,3)+'/'+s.slice(3);let d=await fetch('https://api.binance.com/api/v3/klines?symbol='+s+'&interval='+tf+'&limit=120').then(r=>r.json());a=d.map(q=>({o:+q[1],h:+q[2],l:+q[3],c:+q[4]}));draw();analyze();let q=await fetch('https://api.binance.com/api/v3/ticker/24hr?symbol='+s).then(r=>r.json());$('price').textContent=Number(q.lastPrice).toLocaleString('en-US',{maximumFractionDigits:6});}
+load();
+</script></body></html>
